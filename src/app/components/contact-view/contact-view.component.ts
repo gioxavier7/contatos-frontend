@@ -60,46 +60,65 @@ export class ContactViewComponent implements OnInit {
   }
 
   async carregarContatos() {
-  try {
-    this.isLoading = true;
-    this.errorMessage = '';
-    
-    console.log('Carregando contatos...');
-    
-    const response = await ContatosService.listarTodosLegacy();
-    
-    console.log('Resposta do serviço:', response);
-    console.log('Success:', response.success);
-    console.log('Data:', response.data);
-    console.log('Tipo de data:', typeof response.data);
-    console.log('É array?', Array.isArray(response.data));
-    
-    if (response.success) {
-      //confirma que data é um array
-      const contatosArray = Array.isArray(response.data) ? response.data : [];
+    try {
+      this.isLoading = true;
+      this.errorMessage = '';
       
-      console.log('Contatos array:', contatosArray);
-      console.log('Número de contatos:', contatosArray.length);
+      const response = await ContatosService.listarTodosLegacy();
       
-      this.contatos = contatosArray;
-      this.contatosFiltrados = [...this.contatos];//copia
+      console.log('Resposta completa:', response);
+      console.log('Success:', response.success);
+      console.log('Data:', response.data);
+      console.log('Tipo de data:', typeof response.data);
       
-      console.log('Contatos no componente:', this.contatos);
-    } else {
-      this.errorMessage = response.message || 'Erro ao carregar contatos';
+      if (response.success) {
+        //a api retorna os dados diretamente em response.data
+        const contatosArray = response.data || [];
+        
+        console.log('Contatos array:', contatosArray);
+        console.log('Número de contatos:', contatosArray.length);
+        
+        //mapear os booleanos (0/1 → true/false)
+        this.contatos = contatosArray.map((contato: any) => ({
+          id: contato.id,
+          nome: contato.nome,
+          email: contato.email,
+          data_nascimento: contato.data_nascimento,
+          profissao: contato.profissao,
+          celular: contato.celular,
+          telefone: contato.telefone || '',
+          possui_whatsapp: Boolean(contato.possui_whatsapp),
+          notifica_sms: Boolean(contato.notifica_sms),
+          notifica_email: Boolean(contato.notifica_email),
+          created_at: contato.created_at,
+          updated_at: contato.updated_at
+        }));
+        
+        this.contatosFiltrados = [...this.contatos];
+        
+        console.log('Contatos mapeados:', this.contatos);
+      } else {
+        console.log('Erro na resposta:', response.message);
+        this.errorMessage = response.message || 'Erro ao carregar contatos';
+        this.contatos = [];
+        this.contatosFiltrados = [];
+      }
+    } catch (error: any) {
+      console.error('Erro completo no carregarContatos:', error);
+      this.errorMessage = error.message || 'Erro ao carregar contatos';
       this.contatos = [];
       this.contatosFiltrados = [];
+    } finally {
+      this.isLoading = false;
+      console.log('=== FINALIZADO carregarContatos() ===');
+      console.log('isLoading:', this.isLoading);
+      console.log('contatos.length:', this.contatos.length);
+      
+      //forçar detecção de mudanças
+      this.cdr.detectChanges();
+      console.log('Change detection executado');
     }
-  } catch (error: any) {
-    console.error('Erro completo:', error);
-    this.errorMessage = error.message || 'Erro ao carregar contatos';
-    this.contatos = [];
-    this.contatosFiltrados = [];
-  } finally {
-    this.isLoading = false;
-    console.log('Loading finalizado');
   }
-}
 
   buscarContatos() {
     if (!this.searchTerm.trim()) {
@@ -146,11 +165,15 @@ export class ContactViewComponent implements OnInit {
       this.isSubmitting = true;
       this.errorMessage = '';
       this.successMessage = '';
+      
+      console.log('Iniciando salvarContato...');
 
       const dataFormatada = this.formatarDataParaAPI(this.formData.data_nascimento);
       const celularLimpo = this.limparTelefone(this.formData.celular);
       const telefoneLimpo = this.formData.telefone ? this.limparTelefone(this.formData.telefone) : undefined;
 
+      let response;
+      
       if (this.isEditMode && this.contatoEditandoId) {
         const dadosEdicao: EditarContatoInput = {
           nome: this.formData.nome,
@@ -164,11 +187,8 @@ export class ContactViewComponent implements OnInit {
           notifica_email: this.formData.notifica_email,
         };
 
-        const response = await ContatosService.editar(this.contatoEditandoId, dadosEdicao);
-        if (response.success) {
-          this.successMessage = response.message || 'Contato atualizado com sucesso!';
-          this.cancelarEdicao();
-        }
+        console.log('Editando contato ID:', this.contatoEditandoId, 'dados:', dadosEdicao);
+        response = await ContatosService.editar(this.contatoEditandoId, dadosEdicao);
       } else {
         const novoContato: CriarContatoInput = {
           nome: this.formData.nome,
@@ -185,20 +205,43 @@ export class ContactViewComponent implements OnInit {
           novoContato.telefone = telefoneLimpo;
         }
 
-        const response = await ContatosService.criar(novoContato);
-        if (response.success) {
-          this.successMessage = response.message || 'Contato criado com sucesso!';
-          this.limparFormulario();
-        }
+        console.log('Criando novo contato:', novoContato);
+        response = await ContatosService.criar(novoContato);
       }
 
-      await this.carregarContatos();
-      setTimeout(() => this.successMessage = '', 3000);
+      console.log('Resposta da API:', response);
+      
+      if (response.success) {
+        this.successMessage = response.message || 
+          (this.isEditMode ? 'Contato atualizado com sucesso!' : 'Contato criado com sucesso!');
+        
+        if (this.isEditMode) {
+          this.cancelarEdicao();
+        } else {
+          this.limparFormulario();
+        }
+        
+        //atualiza a lista de contatos
+        console.log('Atualizando lista de contatos...');
+        await this.carregarContatos();
+        
+        //limpa a mensagem de sucesso após 3 segundos
+        setTimeout(() => {
+          this.successMessage = '';
+          this.cdr.detectChanges();
+        }, 3000);
+      } else {
+        //se a api retornou success: false
+        this.errorMessage = response.message || 'Erro ao salvar contato. Tente novamente.';
+      }
+      
     } catch (error: any) {
+      console.error('Erro completo no salvarContato:', error);
       this.errorMessage = error.message || 'Erro ao salvar contato';
-      console.error('Erro ao salvar contato:', error);
     } finally {
+      console.log('Finalizando salvarContato');
       this.isSubmitting = false;
+      this.cdr.detectChanges(); //força atualização da view
     }
   }
 

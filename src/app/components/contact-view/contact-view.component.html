@@ -126,10 +126,11 @@
     <!-- botões do formulário -->
     <div class="form-buttons">
       <button *ngIf="isEditMode" type="button" class="btn btn-cancel" (click)="cancelarEdicao()">
-        Cancelar
+        Cancelar Edição
       </button>
-      <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
-        {{ isSubmitting ? 'Salvando...' : (isEditMode ? 'Atualizar Contato' : 'Cadastrar Contato') }}
+      <button type="submit" class="btn btn-primary" [disabled]="isSubmitting" [class.loading]="isSubmitting">
+        {{ isSubmitting ? '' : (isEditMode ? 'Atualizar Contato' : 'Cadastrar Contato') }}
+        {{ isSubmitting ? 'Salvando...' : '' }}
       </button>
     </div>
   </form>
@@ -179,19 +180,19 @@
           <td>{{ contato.profissao }}</td>
           <td>{{ formatarTelefone(contato.celular) }}</td>
           <td class="actions-cell">
-          <button class="btn-icon btn-edit" (click)="editarContato(contato)" title="Editar">
-            <img src="/brush.svg" alt="Editar" class="icon-svg">
-          </button>
-          <button class="btn-icon btn-delete" (click)="abrirModalDeletar(contato.id)" title="Excluir">
-            <img src="/trash.svg" alt="Excluir" class="icon-svg">
-          </button>
-        </td>
+            <button class="btn-icon btn-edit" (click)="editarContato(contato)" title="Editar">
+              <img src="/brush.svg" alt="Editar" class="icon-svg">
+            </button>
+            <button class="btn-icon btn-delete" (click)="abrirModalDeletar(contato.id)" title="Excluir">
+              <img src="/trash.svg" alt="Excluir" class="icon-svg">
+            </button>
+          </td>
         </tr>
       </tbody>
     </table>
   </div>
 
-  <!-- modal de Visualização -->
+  <!-- modal de visualização -->
   <div *ngIf="showModalVisualizacao && contatoVisualizando" class="modal-overlay" (click)="fecharModalVisualizacao()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <div class="modal-header">
