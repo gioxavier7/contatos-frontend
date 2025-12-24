@@ -120,42 +120,88 @@ export class ContactViewComponent implements OnInit {
     }
   }
 
+  //busca local (instantânea)
   buscarContatos() {
     if (!this.searchTerm.trim()) {
-      this.contatosFiltrados = this.contatos;
+      this.contatosFiltrados = [...this.contatos];
       return;
     }
 
-    const termo = this.searchTerm.toLowerCase();
-    this.contatosFiltrados = this.contatos.filter(contato =>
-      contato.nome.toLowerCase().includes(termo) ||
-      contato.email.toLowerCase().includes(termo) ||
-      contato.profissao.toLowerCase().includes(termo)
-    );
+    const termo = this.searchTerm.toLowerCase().trim();
+    
+    this.contatosFiltrados = this.contatos.filter(contato => {
+      //busca apenas em nome, profissão e email
+      return (
+        contato.nome?.toLowerCase().includes(termo) ||
+        contato.profissao?.toLowerCase().includes(termo) ||
+        contato.email?.toLowerCase().includes(termo)
+      );
+    });
   }
 
+  //busca na API
   async buscarContatosAPI() {
-    if (!this.searchTerm.trim()) {
+    const termo = this.searchTerm.trim();
+    
+    if (!termo) {
       await this.carregarContatos();
       return;
     }
 
     try {
       this.isLoading = true;
-      const response = await ContatosService.listarTodos({
-        nome: this.searchTerm,
-        profissao: this.searchTerm
-      });
+      console.log('Buscando na API com termo:', termo);
+      
+      let response;
+      
+      //primeiro tenta buscar por nome
+      response = await ContatosService.listarTodos({ nome: termo });
+      console.log('Busca por nome - resposta:', response);
+      
+      //se não encontrou por nome, tenta por profissão
+      if (response.success && (!response.data || response.data.length === 0)) {
+        console.log('Nenhum resultado por nome, tentando por profissão...');
+        response = await ContatosService.listarTodos({ profissao: termo });
+        console.log('Busca por profissão - resposta:', response);
+      }
       
       if (response.success && response.data) {
-        this.contatosFiltrados = response.data;
+        const contatosArray = response.data || [];
+        
+        this.contatosFiltrados = contatosArray.map((contato: any) => ({
+          id: contato.id,
+          nome: contato.nome,
+          email: contato.email,
+          data_nascimento: contato.data_nascimento,
+          profissao: contato.profissao,
+          celular: contato.celular,
+          telefone: contato.telefone || '',
+          possui_whatsapp: Boolean(contato.possui_whatsapp),
+          notifica_sms: Boolean(contato.notifica_sms),
+          notifica_email: Boolean(contato.notifica_email),
+          created_at: contato.created_at,
+          updated_at: contato.updated_at
+        }));
+        
+        console.log('Contatos encontrados na busca:', this.contatosFiltrados.length);
+      } else {
+        console.log('Nenhum resultado encontrado na API');
+        this.contatosFiltrados = [];
       }
     } catch (error) {
-      console.error('Erro ao buscar contatos:', error);
+      console.error('Erro na busca API:', error);
+      //em caso de erro, faz busca local como fallback
       this.buscarContatos();
     } finally {
       this.isLoading = false;
+      this.cdr.detectChanges();
     }
+  }
+
+  //limpar busca
+  limparBusca() {
+    this.searchTerm = '';
+    this.carregarContatos();
   }
 
   async salvarContato() {
