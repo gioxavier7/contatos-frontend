@@ -116,7 +116,7 @@ contatos-frontend/
 ### Pré-requisitos
 - Node.js (versão LTS)
 - Angular CLI
-- Backend rodando localmente. [Clique aqui](https://https://github.com/gioxavier7/contatos-backend) para acessar o repositório do servidor backend
+- Backend rodando localmente. [Clique aqui](https://github.com/gioxavier7/contatos-backend) para acessar o repositório do servidor backend
 
 ### 1️⃣ Clonar o repositório
 
