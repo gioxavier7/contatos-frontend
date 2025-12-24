@@ -1,0 +1,276 @@
+<div class="contact-view-container">
+  <!-- formulario de contato -->
+  <form class="contact-form" (ngSubmit)="salvarContato()">
+    
+    <!-- campos do formulário -->
+    <div class="form-row">
+      <div class="form-field">
+        <app-fill-field
+          label="Nome Completo *"
+          placeholder="Ex.: Maria Silva"
+          type="text"
+          [(ngModel)]="formData.nome"
+          name="nome"
+          [maxLength]="100"
+        ></app-fill-field>
+      </div>
+
+      <div class="form-field">
+        <app-fill-field
+          label="E-mail *"
+          placeholder="Ex.: maria.silva@exemplo.com"
+          type="email"
+          [(ngModel)]="formData.email"
+          name="email"
+        ></app-fill-field>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-field">
+        <app-fill-field
+          label="Data de Nascimento *"
+          placeholder="DD/MM/AAAA"
+          type="date"
+          [(ngModel)]="formData.data_nascimento"
+          name="data_nascimento"
+          (ngModelChange)="onDataNascimentoChange()"
+        ></app-fill-field>
+        <div *ngIf="idadeError" class="error-message">
+          {{ idadeError }}
+        </div>
+      </div>
+
+      <!--profissão -->
+      <div class="form-field">
+        <app-fill-field
+          label="Profissão *"
+          placeholder="Ex.: Desenvolvedora Back-End"
+          type="text"
+          [(ngModel)]="formData.profissao"
+          name="profissao"
+          [maxLength]="150"
+        ></app-fill-field>
+      </div>
+    </div>
+
+    <!-- telefone -->
+    <div class="form-row">
+      <div class="form-field">
+        <app-fill-field
+          label="Telefone Fixo (opcional)"
+          placeholder="Ex.: (11) 3333-4444"
+          type="tel"
+          [(ngModel)]="formData.telefone"
+          name="telefone"
+        ></app-fill-field>
+      </div>
+
+      <div class="form-field">
+        <app-fill-field
+          label="Celular *"
+          placeholder="Ex.: (11) 99876-5432"
+          type="tel"
+          [(ngModel)]="formData.celular"
+          name="celular"
+        ></app-fill-field>
+      </div>
+    </div>
+
+    <!-- checkbox -->
+    <div class="form-checkboxes">
+      <div class="checkbox-row">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            [(ngModel)]="formData.possui_whatsapp"
+            name="possui_whatsapp"
+            class="checkbox-input"
+          />
+          <span class="checkbox-text">Número de celular possui Whatsapp</span>
+        </label>
+
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            [(ngModel)]="formData.notifica_email"
+            name="notifica_email"
+            class="checkbox-input"
+          />
+          <span class="checkbox-text">Enviar notificações por E-mail</span>
+        </label>
+      </div>
+
+      <div class="checkbox-row">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            [(ngModel)]="formData.notifica_sms"
+            name="notifica_sms"
+            class="checkbox-input"
+          />
+          <span class="checkbox-text">Enviar notificações por SMS</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- mensagens de erro e sucesso -->
+    <div *ngIf="errorMessage" class="error-message">
+      {{ errorMessage }}
+    </div>
+    
+    <div *ngIf="successMessage" class="success-message">
+      {{ successMessage }}
+    </div>
+
+    <!-- botões do formulário -->
+    <div class="form-buttons">
+      <button *ngIf="isEditMode" type="button" class="btn btn-cancel" (click)="cancelarEdicao()">
+        Cancelar
+      </button>
+      <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+        {{ isSubmitting ? 'Salvando...' : (isEditMode ? 'Atualizar Contato' : 'Cadastrar Contato') }}
+      </button>
+    </div>
+  </form>
+
+  <!-- barra de pesquisa -->
+  <div class="search-section">
+    <div class="search-container">
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Buscar contatos por nome ou profissão..."
+        [(ngModel)]="searchTerm"
+        (ngModelChange)="buscarContatos()"
+      />
+      <button class="btn btn-search" (click)="buscarContatosAPI()">
+        Buscar
+      </button>
+    </div>
+  </div>
+
+  <!-- tabela de contatos -->
+  <div class="contacts-table-container">
+    <div *ngIf="isLoading" class="loading">
+      Carregando contatos...
+    </div>
+    
+    <div *ngIf="!isLoading && contatosFiltrados.length === 0" class="no-results">
+      Nenhum contato encontrado
+    </div>
+    
+    <table *ngIf="!isLoading && contatosFiltrados.length > 0" class="contacts-table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Data de nascimento</th>
+          <th>E-mail</th>
+          <th>Profissão</th>
+          <th>Celular</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let contato of contatosFiltrados">
+          <td>{{ contato.nome }}</td>
+          <td>{{ formatarDataParaExibicao(contato.data_nascimento) }}</td>
+          <td>{{ contato.email }}</td>
+          <td>{{ contato.profissao }}</td>
+          <td>{{ formatarTelefone(contato.celular) }}</td>
+          <td class="actions-cell">
+          <button class="btn-icon btn-edit" (click)="editarContato(contato)" title="Editar">
+            <img src="/brush.svg" alt="Editar" class="icon-svg">
+          </button>
+          <button class="btn-icon btn-delete" (click)="abrirModalDeletar(contato.id)" title="Excluir">
+            <img src="/trash.svg" alt="Excluir" class="icon-svg">
+          </button>
+        </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- modal de Visualização -->
+  <div *ngIf="showModalVisualizacao && contatoVisualizando" class="modal-overlay" (click)="fecharModalVisualizacao()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Detalhes do Contato</h3>
+        <button class="btn-close" (click)="fecharModalVisualizacao()">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-row">
+          <span class="detail-label">Nome Completo:</span>
+          <span class="detail-value">{{ contatoVisualizando.nome }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">E-mail:</span>
+          <span class="detail-value">{{ contatoVisualizando.email }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Data de Nascimento:</span>
+          <span class="detail-value">{{ formatarDataParaExibicao(contatoVisualizando.data_nascimento) }} ({{ calcularIdade(contatoVisualizando.data_nascimento) }} anos)</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Profissão:</span>
+          <span class="detail-value">{{ contatoVisualizando.profissao }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Celular:</span>
+          <span class="detail-value">{{ formatarTelefone(contatoVisualizando.celular) }}</span>
+        </div>
+        <div *ngIf="contatoVisualizando.telefone" class="detail-row">
+          <span class="detail-label">Telefone Fixo:</span>
+          <span class="detail-value">{{ formatarTelefone(contatoVisualizando.telefone) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">WhatsApp:</span>
+          <span class="detail-value">{{ contatoVisualizando.possui_whatsapp ? 'Sim' : 'Não' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Permite SMS:</span>
+          <span class="detail-value">{{ contatoVisualizando.notifica_sms ? 'Sim' : 'Não' }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Notificações por E-mail:</span>
+          <span class="detail-value">{{ contatoVisualizando.notifica_email ? 'Sim' : 'Não' }}</span>
+        </div>
+        <div *ngIf="contatoVisualizando.created_at" class="detail-row">
+          <span class="detail-label">Cadastrado em:</span>
+          <span class="detail-value">{{ contatoVisualizando.created_at }}</span>
+        </div>
+        <div *ngIf="contatoVisualizando.updated_at && contatoVisualizando.updated_at !== contatoVisualizando.created_at" class="detail-row">
+          <span class="detail-label">Última atualização:</span>
+          <span class="detail-value">{{ contatoVisualizando.updated_at }}</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="fecharModalVisualizacao()">
+          Fechar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- modal de exclusão -->
+  <div *ngIf="showModalConfirmacao" class="modal-overlay" (click)="fecharModalConfirmacao()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Confirmar Exclusão</h3>
+        <button class="btn-close" (click)="fecharModalConfirmacao()">×</button>
+      </div>
+      <div class="modal-body">
+        <p>Tem certeza que deseja excluir este contato?</p>
+        <p class="warning-text">Esta ação não pode ser desfeita.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="fecharModalConfirmacao()">
+          Cancelar
+        </button>
+        <button class="btn btn-danger" (click)="confirmarDelecao()">
+          Excluir
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

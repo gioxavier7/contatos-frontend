@@ -1,0 +1,47 @@
+<div class="form-group">
+  <label class="form-label">{{ label }}</label>
+  
+  @if (type === 'date') {
+    <input
+      type="date"
+      class="form-control"
+      [class.disabled]="disabled"
+      [placeholder]="placeholder"
+      [value]="value"
+      [disabled]="disabled"
+      (input)="onDateInput($event)"
+      (focus)="onFocus()"
+      (blur)="onBlur()"
+    />
+  } @else if (type === 'tel') {
+    <input
+      type="tel"
+      class="form-control"
+      [class.disabled]="disabled"
+      [placeholder]="placeholder"
+      [value]="value"
+      [disabled]="disabled"
+      (input)="onPhoneInput($event)"
+      (focus)="onFocus()"
+      (blur)="onBlur()"
+    />
+  } @else {
+    <input
+      [type]="type"
+      class="form-control"
+      [class.disabled]="disabled"
+      [placeholder]="placeholder"
+      [value]="value"
+      [disabled]="disabled"
+      (input)="onInputChange($event.target.value)"
+      (focus)="onFocus()"
+      (blur)="onBlur()"
+    />
+  }
+  
+  @if (showCharacterWarning) {
+    <div class="character-warning">
+      Limite de {{ maxLength }} caracteres atingido
+    </div>
+  }
+</div>
